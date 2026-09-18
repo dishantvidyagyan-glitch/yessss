@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DuoDates - Private Live Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col items-center justify-center p-4">
+
+  <div id="app-container" class="bg-white rounded-2xl shadow-lg border border-slate-200 w-full max-w-md flex flex-col h-[600px] overflow-hidden hidden">
+    
+    <!-- Top Header -->
+    <div class="bg-rose-500 text-white p-4 flex justify-between items-center">
+      <div>
+        <h1 class="font-bold text-lg">DuoDates Live Chat</h1>
+        <p class="text-xs text-rose-100">Connected in real time</p>
+      </div>
+      <select id="user-selector" onchange="changeUser(this.value)" class="bg-rose-600 text-white text-xs font-semibold rounded px-2 py-1 outline-none">
+        <option value="Alex">Alex (Couple A)</option>
+        <option value="Sam">Sam (Couple A)</option>
+        <option value="Jordan">Jordan (Couple B)</option>
+        <option value="Taylor">Taylor (Couple B)</option>
+      </select>
+    </div>
+
+    <!-- Messages Window -->
+    <div id="message-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50">
+      <!-- Messages load dynamically -->
+    </div>
+
+    <!-- Message Input -->
+    <form onsubmit="sendMessage(event)" class="p-3 bg-white border-t border-slate-200 flex space-x-2">
+      <input id="message-input" type="text" placeholder="Type a message..." class="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-rose-500" required>
+      <button type="submit" class="bg-rose-500 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-rose-600 transition">Send</button>
+    </form>
+
+  </div>
+
+  <script>
+    // 1. Password Protection Check
+    const ROOM_PASSWORD = "OurSecretPassword123"; // Change this to your preferred password
+    const userPass = prompt("Enter the secret room password:");
+
+    if (userPass !== ROOM_PASSWORD) {
+      alert("Incorrect password! Access denied.");
+      document.body.innerHTML = "<h1 style='text-align:center; margin-top:50px; font-family:sans-serif; color:#e11d48;'>Access Denied</h1>";
+    } else {
+      document.getElementById('app-container').classList.remove('hidden');
+      initializeChat();
+    }
+
+   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBmvnFkg1Jay7CGyDSG3mkOsY9UM8WDzcg",
+  authDomain: "we-love-each-other.firebaseapp.com",
+  projectId: "we-love-each-other",
+  storageBucket: "we-love-each-other.firebasestorage.app",
+  messagingSenderId: "634100929310",
+  appId: "1:634100929310:web:7dc49118793e7fc960af0f",
+  measurementId: "G-9CH735FKGP"
+};
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+      const chatRef = db.ref('messages');
+
+      let currentUser = "Alex";
+
+      window.changeUser = function(val) {
+        currentUser = val;
+      };
+
+      window.sendMessage = function(e) {
+        e.preventDefault();
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+
+        if (text !== "") {
+          chatRef.push({
+            user: currentUser,
+            text: text,
+            timestamp: Date.now()
+          });
+          input.value = "";
+        }
+      };
+
+      // Listen for incoming messages in real time
+      chatRef.on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        const container = document.getElementById('message-container');
+        const isMe = data.user === currentUser;
+
+        const msgBubble = document.createElement('div');
+        msgBubble.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+        msgBubble.innerHTML = `
+          <span class="text-[10px] text-slate-400 mb-0.5">${data.user}</span>
+          <div class="max-w-[75%] px-3 py-2 rounded-2xl text-sm ${isMe ? 'bg-rose-500 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'}">
+            ${data.text}
+          </div>
+        `;
+
+        container.appendChild(msgBubble);
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  </script>
+
+</body>
+</html>
